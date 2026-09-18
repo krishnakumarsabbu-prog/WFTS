@@ -17,7 +17,7 @@ export function App() {
     case 'conversation':
       return (
         <div className="flex flex-col min-h-[100dvh]">
-          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} />
+          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} variant="dark" />
           <ConversationScreen
             transcript={session.transcript}
             recordingStatus={session.recordingStatus}
@@ -34,7 +34,7 @@ export function App() {
     case 'processing':
       return (
         <div className="flex flex-col min-h-[100dvh]">
-          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} />
+          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} variant="dark" />
           <ProcessingScreen stages={session.processingStages} />
         </div>
       );
@@ -42,7 +42,7 @@ export function App() {
     case 'review':
       return session.feedback ? (
         <div className="flex flex-col min-h-[100dvh]">
-          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} />
+          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} variant="dark" />
           <ReviewScreen
             feedback={session.feedback}
             onUpdate={session.updateFeedback}

@@ -1,70 +1,81 @@
 import type { ProcessingStage } from '../types';
 import { CheckIcon } from '../components/icons';
+import { InnovationBackground, SignalViz } from '../components/InnovationBackground';
 
 interface ProcessingScreenProps {
   stages: ProcessingStage[];
   title?: string;
 }
 
-export function ProcessingScreen({ stages, title = 'Understanding the conversation...' }: ProcessingScreenProps) {
+export function ProcessingScreen({ stages, title = 'Analyzing Visitor Feedback' }: ProcessingScreenProps) {
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-wf-charcoal">
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+    <div className="relative flex flex-col min-h-[100dvh] bg-wf-ink text-white overflow-hidden">
+      <InnovationBackground variant="dark" />
+
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-8">
         <div className="w-full max-w-sm animate-fade-in">
-          {/* Animated indicator */}
+          {/* Signal visualization */}
           <div className="flex flex-col items-center mb-10">
-            <div className="relative w-20 h-20 mb-6">
-              <span className="absolute inset-0 rounded-full border-4 border-wf-stone-700" />
-              <span className="absolute inset-0 rounded-full border-4 border-transparent border-t-wf-red animate-spin" style={{ animationDuration: '1s' }} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-3 h-3 rounded-full bg-wf-red animate-pulse" />
-              </div>
+            <SignalViz size={180} />
+            <h2 className="text-2xl font-extrabold text-white text-center mt-8 tracking-tight">{title}</h2>
+
+            {/* Flow labels */}
+            <div className="flex items-center gap-2 mt-4">
+              {['VOICE', 'UNDERSTANDING', 'INSIGHT', 'EVIDENCE'].map((label, i) => (
+                <div key={label} className="flex items-center gap-2">
+                  {i > 0 && <span className="text-wf-stone-700 text-xs">→</span>}
+                  <span className={`text-[10px] font-semibold tracking-wider ${
+                    i <= 1 ? 'text-wf-red-bright' : i === 2 ? 'text-wf-gold' : 'text-wf-stone-600'
+                  }`}>
+                    {label}
+                  </span>
+                </div>
+              ))}
             </div>
-            <h2 className="text-xl font-bold text-white text-center">{title}</h2>
-            <p className="text-sm text-wf-stone-400 mt-1.5">Processing feedback locally</p>
           </div>
 
           {/* Stages */}
-          <div className="space-y-1">
+          <div className="glass-dark rounded-2xl p-5 space-y-1">
             {stages.map((stage, index) => (
               <div
                 key={index}
-                className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl transition-all ${
-                  stage.status === 'active'
-                    ? 'bg-wf-stone-800'
-                    : 'bg-transparent'
+                className={`flex items-center gap-3.5 px-3 py-3 rounded-xl transition-all ${
+                  stage.status === 'active' ? 'bg-white/5' : ''
                 }`}
               >
-                <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center">
+                <div className="flex-shrink-0 w-7 h-7 flex items-center justify-center">
                   {stage.status === 'complete' && (
-                    <div className="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center">
-                      <CheckIcon className="w-4 h-4 text-white" />
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-wf-red to-wf-red-deep flex items-center justify-center animate-scale-in">
+                      <CheckIcon className="w-3.5 h-3.5 text-white" />
                     </div>
                   )}
                   {stage.status === 'active' && (
-                    <div className="w-7 h-7 rounded-full border-2 border-wf-red border-t-transparent animate-spin" style={{ animationDuration: '0.8s' }} />
+                    <div className="w-6 h-6 rounded-full border-2 border-wf-red border-t-transparent animate-spin" style={{ animationDuration: '0.8s' }} />
                   )}
                   {stage.status === 'pending' && (
-                    <div className="w-7 h-7 rounded-full border-2 border-wf-stone-600" />
+                    <div className="w-6 h-6 rounded-full border-2 border-wf-stone-700" />
                   )}
                 </div>
-                <span
-                  className={`text-sm font-medium transition-colors ${
-                    stage.status === 'complete'
-                      ? 'text-white'
-                      : stage.status === 'active'
-                      ? 'text-white'
-                      : 'text-wf-stone-500'
-                  }`}
-                >
+                <span className={`text-sm font-medium transition-colors ${
+                  stage.status === 'complete' ? 'text-white'
+                  : stage.status === 'active' ? 'text-white'
+                  : 'text-wf-stone-600'
+                }`}>
                   {stage.label}
                 </span>
                 {stage.status === 'active' && (
                   <span className="ml-auto text-wf-red text-xs font-mono animate-pulse">●</span>
                 )}
+                {stage.status === 'complete' && (
+                  <span className="ml-auto text-wf-gold/60 text-xs">✓</span>
+                )}
               </div>
             ))}
           </div>
+
+          <p className="text-center text-[11px] text-wf-stone-600 mt-6 tracking-wider">
+            Processing locally on device
+          </p>
         </div>
       </div>
     </div>
