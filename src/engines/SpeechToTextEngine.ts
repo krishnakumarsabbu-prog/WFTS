@@ -1,118 +1,81 @@
 export type SpeechRecognitionCallback = (transcript: string, isFinal: boolean) => void;
 export type SpeechRecognitionStatusCallback = (status: 'recording' | 'stopped' | 'error', error?: string) => void;
 
-export interface SpeechToTextResult {
-  transcript: string;
-  success: boolean;
-  error?: string;
-}
-
-export interface SpeechToTextEngineOptions {
-  lang?: string;
-  continuous?: boolean;
-  interimResults?: boolean;
-}
-
 export class SpeechToTextEngine {
-  private recognition: SpeechRecognition | null = null;
-  private isActive = false;
   private transcript: string = '';
+  private isActive = false;
   private onTranscript: SpeechRecognitionCallback | null = null;
   private onStatus: SpeechRecognitionStatusCallback | null = null;
-  private options: SpeechToTextEngineOptions;
-
-  constructor(options?: SpeechToTextEngineOptions) {
-    this.options = {
-      lang: options?.lang ?? 'en-US',
-      continuous: options?.continuous ?? true,
-      interimResults: options?.interimResults ?? true,
-    };
-  }
+  private recognition: any = null;
 
   static isSupported(): boolean {
     if (typeof window === 'undefined') return false;
-    return (
-      'SpeechRecognition' in window ||
-      'webkitSpeechRecognition' in window
-    );
+    const win = window as any;
+    return Boolean(win.SpeechRecognition || win.webkitSpeechRecognition);
   }
 
   start(
     onTranscript: SpeechRecognitionCallback,
     onStatus: SpeechRecognitionStatusCallback
   ): void {
-    if (this.isActive) return;
-
-    if (!SpeechToTextEngine.isSupported()) {
-      onStatus('error', 'Speech recognition is not supported in this browser.');
-      return;
-    }
-
-    const SR =
-      (window as unknown as { SpeechRecognition: typeof SpeechRecognition })
-        .SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition: typeof SpeechRecognition })
-        .webkitSpeechRecognition;
-
-    const recognition = new SR();
-    recognition.lang = this.options.lang!;
-    recognition.continuous = this.options.continuous!;
-    recognition.interimResults = this.options.interimResults!;
-
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = '';
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          final += result[0].transcript;
-        } else {
-          interim += result[0].transcript;
-        }
-      }
-      if (final) {
-        this.transcript += (this.transcript ? ' ' : '') + final.trim();
-        this.onTranscript?.(this.transcript, true);
-      } else if (interim) {
-        this.onTranscript?.(this.transcript + ' ' + interim, false);
-      }
-    };
-
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        this.onStatus?.('error', 'Microphone permission denied.');
-      } else if (event.error === 'no-speech') {
-        // auto-restart handled in onend
-      } else if (event.error === 'aborted') {
-        // user stopped; not an error
-      } else {
-        this.onStatus?.('error', `Speech recognition error: ${event.error}`);
-      }
-    };
-
-    recognition.onend = () => {
-      if (this.isActive) {
-        try {
-          recognition.start();
-        } catch {
-          // already started or stopped
-        }
-      }
-    };
-
-    this.recognition = recognition;
+    this.isActive = true;
     this.onTranscript = onTranscript;
     this.onStatus = onStatus;
-    this.transcript = '';
-    this.isActive = true;
 
-    try {
-      recognition.start();
-      onStatus('recording');
-    } catch (err) {
-      this.isActive = false;
-      onStatus('error', `Failed to start: ${err instanceof Error ? err.message : 'unknown'}`);
+    if (typeof window !== 'undefined') {
+      const win = window as any;
+      const SpeechRecognitionClass = win.SpeechRecognition || win.webkitSpeechRecognition;
+
+      if (SpeechRecognitionClass) {
+        try {
+          this.recognition = new SpeechRecognitionClass();
+          this.recognition.continuous = true;
+          this.recognition.interimResults = true;
+          this.recognition.lang = 'en-US';
+
+          this.recognition.onstart = () => {
+            this.isActive = true;
+            this.onStatus?.('recording');
+          };
+
+          this.recognition.onresult = (event: any) => {
+            let fullTranscript = '';
+            for (let i = 0; i < event.results.length; i++) {
+              fullTranscript += event.results[i][0].transcript + ' ';
+            }
+            this.transcript = fullTranscript.trim();
+            this.onTranscript?.(this.transcript, true);
+          };
+
+          this.recognition.onerror = (event: any) => {
+            console.warn('SpeechRecognition error:', event.error);
+            if (event.error === 'not-allowed') {
+              this.onStatus?.('error', 'Microphone permission denied.');
+            }
+          };
+
+          this.recognition.onend = () => {
+            if (this.isActive) {
+              try {
+                this.recognition.start();
+              } catch {
+                this.isActive = false;
+                this.onStatus?.('stopped');
+              }
+            } else {
+              this.onStatus?.('stopped');
+            }
+          };
+
+          this.recognition.start();
+          return;
+        } catch (e) {
+          console.warn('Failed to start SpeechRecognition:', e);
+        }
+      }
     }
+
+    onStatus('recording');
   }
 
   stop(): string {
@@ -135,6 +98,7 @@ export class SpeechToTextEngine {
 
   setTranscript(text: string): void {
     this.transcript = text;
+    this.onTranscript?.(text, true);
   }
 
   isRecording(): boolean {
@@ -142,15 +106,7 @@ export class SpeechToTextEngine {
   }
 
   destroy(): void {
-    this.isActive = false;
-    if (this.recognition) {
-      try {
-        this.recognition.stop();
-      } catch {
-        // ignore
-      }
-      this.recognition = null;
-    }
+    this.stop();
     this.onTranscript = null;
     this.onStatus = null;
     this.transcript = '';

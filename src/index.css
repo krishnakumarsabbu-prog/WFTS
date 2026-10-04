@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 * {
   -webkit-tap-highlight-color: transparent;
@@ -14,7 +12,7 @@ html, body {
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #0A0A0B;
+  background: #FAF9F7;
   color: #1A1A1C;
 }
 
@@ -142,11 +140,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 11, 0.15);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(10, 10, 11, 0.25);
 }
 
 /* === UTILITY === */

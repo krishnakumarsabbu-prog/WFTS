@@ -63,10 +63,9 @@ export function useSession() {
 
   const startSession = useCallback(
     (name: string) => {
-      if (!name.trim()) return;
       initEngines();
       const id = generateSessionId(APP_CONFIG.sessionIdPrefix);
-      setAnchorName(name.trim());
+      setAnchorName(name.trim() || 'Booth Anchor');
       setSessionId(id);
       setPhase('conversation');
       setTranscript('');
@@ -76,13 +75,77 @@ export function useSession() {
     [initEngines]
   );
 
+  const submitDirectFeedback = useCallback(
+    async (name: string, text: string) => {
+      const trimmedText = text.trim();
+      if (!trimmedText || trimmedText.length < 3) return;
+
+      initEngines();
+      const id = generateSessionId(APP_CONFIG.sessionIdPrefix);
+      const anchor = name.trim() || 'Booth Anchor';
+      setAnchorName(anchor);
+      setSessionId(id);
+      setTranscript(trimmedText);
+      setIsProcessing(true);
+      setPhase('processing');
+      setErrorMessage('');
+
+      const stages: ProcessingStage[] = [
+        { label: 'Feedback text captured', status: 'complete' },
+        { label: 'Transcript prepared', status: 'complete' },
+        { label: 'Analyzing feedback', status: 'active' },
+        { label: 'Creating structured insight', status: 'pending' },
+        { label: 'Submitting to GitHub', status: 'pending' },
+      ];
+      setProcessingStages([...stages]);
+
+      try {
+        const slm = slmEngineRef.current ?? new FeedbackSLMEngine();
+        const result = await slm.analyze(
+          {
+            transcript: trimmedText,
+            sessionId: id,
+            anchorName: anchor,
+            timestamp: nowISO(),
+          },
+          (progress) => {
+            if (progress.stage === 'analyzing') {
+              stages[2] = { label: 'Analyzing feedback', status: 'active' };
+              setProcessingStages([...stages]);
+            } else if (progress.stage === 'structuring') {
+              stages[2] = { label: 'Analyzing feedback', status: 'complete' };
+              stages[3] = { label: 'Creating structured insight', status: 'active' };
+              setProcessingStages([...stages]);
+            } else if (progress.stage === 'complete') {
+              stages[3] = { label: 'Creating structured insight', status: 'complete' };
+              setProcessingStages([...stages]);
+            }
+          }
+        );
+
+        const validation = slm.validate(result);
+        if (!validation.valid) {
+          setErrorMessage(`AI output validation failed: ${validation.errors.join(' ')}`);
+          setPhase('error');
+          setIsProcessing(false);
+          return;
+        }
+
+        setFeedback(result);
+        setPhase('review');
+        setIsProcessing(false);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Analysis failed.';
+        setErrorMessage(msg);
+        setPhase('error');
+        setIsProcessing(false);
+      }
+    },
+    [initEngines]
+  );
+
   const startRecording = useCallback(() => {
     initEngines();
-    if (!SpeechToTextEngine.isSupported()) {
-      setRecordingStatus('unsupported');
-      return;
-    }
-
     const engine = speechEngineRef.current!;
 
     engine.start(
@@ -285,6 +348,7 @@ export function useSession() {
     errorMessage,
     isProcessing,
     startSession,
+    submitDirectFeedback,
     startRecording,
     stopRecording,
     updateTranscript,

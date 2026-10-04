@@ -1,8 +1,15 @@
 import type { GitHubConfig } from '../types';
 
-function required(key: keyof ImportMetaEnv, fallback: string): string {
-  const val = import.meta.env[key];
-  return val && val.trim().length > 0 ? val.trim() : fallback;
+function getEnv(key: string, fallback: string): string {
+  try {
+    const metaEnv = (import.meta as any).env;
+    if (metaEnv && metaEnv[key] && String(metaEnv[key]).trim().length > 0) {
+      return String(metaEnv[key]).trim();
+    }
+  } catch {
+    // ignore
+  }
+  return fallback;
 }
 
 export const APP_CONFIG = {
@@ -13,24 +20,26 @@ export const APP_CONFIG = {
 } as const;
 
 export const GITHUB_CONFIG: GitHubConfig = {
-  owner: required('VITE_GITHUB_OWNER', 'wellsfargo-tis'),
-  repo: required('VITE_GITHUB_REPO', 'feedback-data'),
-  branch: required('VITE_GITHUB_BRANCH', 'main'),
-  token: required('VITE_GITHUB_TOKEN', ''),
+  owner: getEnv('VITE_GITHUB_OWNER', 'krishnakumarsabbu-prog'),
+  repo: getEnv('VITE_GITHUB_REPO', 'WFTS'),
+  branch: getEnv('VITE_GITHUB_BRANCH', 'main'),
+  token: getEnv('VITE_GITHUB_TOKEN', ''),
 };
 
-export function isGitHubConfigured(): boolean {
+export function isGitHubConfigured(customToken?: string): boolean {
+  const token = customToken || GITHUB_CONFIG.token;
   return (
     GITHUB_CONFIG.owner.length > 0 &&
     GITHUB_CONFIG.repo.length > 0 &&
-    GITHUB_CONFIG.token.length > 0
+    Boolean(token && token.trim().length > 0)
   );
 }
 
-export function getGitHubConfigStatus(): { configured: boolean; missing: string[] } {
+export function getGitHubConfigStatus(customToken?: string): { configured: boolean; missing: string[] } {
   const missing: string[] = [];
   if (!GITHUB_CONFIG.owner) missing.push('owner');
   if (!GITHUB_CONFIG.repo) missing.push('repo');
-  if (!GITHUB_CONFIG.token) missing.push('token');
+  const token = customToken || GITHUB_CONFIG.token;
+  if (!token) missing.push('token');
   return { configured: missing.length === 0, missing };
 }

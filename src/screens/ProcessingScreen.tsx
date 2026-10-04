@@ -1,6 +1,8 @@
+import React from 'react';
 import type { ProcessingStage } from '../types';
 import { CheckIcon } from '../components/icons';
 import { InnovationBackground, SignalViz } from '../components/InnovationBackground';
+import { WFTheme } from '../theme';
 
 interface ProcessingScreenProps {
   stages: ProcessingStage[];
@@ -9,74 +11,94 @@ interface ProcessingScreenProps {
 
 export function ProcessingScreen({ stages, title = 'Analyzing Visitor Feedback' }: ProcessingScreenProps) {
   return (
-    <div className="relative flex flex-col min-h-[100dvh] bg-wf-ink text-white overflow-hidden">
-      <InnovationBackground variant="dark" />
+    <div className="min-h-screen bg-[#FAF9F7] text-[#1A1A1C] relative flex flex-col justify-center items-center px-6 py-12">
+      <InnovationBackground variant="light" />
 
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-8">
-        <div className="w-full max-w-sm animate-fade-in">
-          {/* Signal visualization */}
-          <div className="flex flex-col items-center mb-10">
-            <SignalViz size={180} />
-            <h2 className="text-2xl font-extrabold text-white text-center mt-8 tracking-tight">{title}</h2>
+      <div className="max-w-md w-full flex flex-col items-center">
+        {/* Center Signal */}
+        <div className="flex flex-col items-center mb-6">
+          <SignalViz size={160} variant="light" />
+          <h1 className="text-2xl font-extrabold text-[#1A1A1C] text-center tracking-tight mt-3">
+            {title}
+          </h1>
 
-            {/* Flow labels */}
-            <div className="flex items-center gap-2 mt-4">
-              {['VOICE', 'UNDERSTANDING', 'INSIGHT', 'EVIDENCE'].map((label, i) => (
-                <div key={label} className="flex items-center gap-2">
-                  {i > 0 && <span className="text-wf-stone-700 text-xs">→</span>}
-                  <span className={`text-[10px] font-semibold tracking-wider ${
-                    i <= 1 ? 'text-wf-red-bright' : i === 2 ? 'text-wf-gold' : 'text-wf-stone-600'
-                  }`}>
-                    {label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Stages */}
-          <div className="glass-dark rounded-2xl p-5 space-y-1">
-            {stages.map((stage, index) => (
-              <div
-                key={index}
-                className={`flex items-center gap-3.5 px-3 py-3 rounded-xl transition-all ${
-                  stage.status === 'active' ? 'bg-white/5' : ''
-                }`}
-              >
-                <div className="flex-shrink-0 w-7 h-7 flex items-center justify-center">
-                  {stage.status === 'complete' && (
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-wf-red to-wf-red-deep flex items-center justify-center animate-scale-in">
-                      <CheckIcon className="w-3.5 h-3.5 text-white" />
-                    </div>
-                  )}
-                  {stage.status === 'active' && (
-                    <div className="w-6 h-6 rounded-full border-2 border-wf-red border-t-transparent animate-spin" style={{ animationDuration: '0.8s' }} />
-                  )}
-                  {stage.status === 'pending' && (
-                    <div className="w-6 h-6 rounded-full border-2 border-wf-stone-700" />
-                  )}
-                </div>
-                <span className={`text-sm font-medium transition-colors ${
-                  stage.status === 'complete' ? 'text-white'
-                  : stage.status === 'active' ? 'text-white'
-                  : 'text-wf-stone-600'
-                }`}>
-                  {stage.label}
+          {/* Flow labels */}
+          <div className="flex items-center gap-1.5 mt-3">
+            {['VOICE', 'UNDERSTANDING', 'INSIGHT', 'EVIDENCE'].map((label, i) => (
+              <React.Fragment key={label}>
+                {i > 0 && <span className="text-[10px] text-[#C4C4C8]">→</span>}
+                <span
+                  className="text-[10px] font-bold tracking-wider"
+                  style={{
+                    color:
+                      i <= 1
+                        ? WFTheme.colors.red
+                        : i === 2
+                        ? WFTheme.colors.goldDeep
+                        : WFTheme.colors.textMuted,
+                  }}
+                >
+                  {label}
                 </span>
-                {stage.status === 'active' && (
-                  <span className="ml-auto text-wf-red text-xs font-mono animate-pulse">●</span>
-                )}
-                {stage.status === 'complete' && (
-                  <span className="ml-auto text-wf-gold/60 text-xs">✓</span>
-                )}
-              </div>
+              </React.Fragment>
             ))}
           </div>
-
-          <p className="text-center text-[11px] text-wf-stone-600 mt-6 tracking-wider">
-            Processing locally on device
-          </p>
         </div>
+
+        {/* Stages Card */}
+        <div className="w-full bg-white rounded-2xl p-5 shadow-sm border border-[#E8E8EA] space-y-2">
+          {stages.map((stage, index) => {
+            const isComplete = stage.status === 'complete';
+            const isActive = stage.status === 'active';
+
+            return (
+              <div
+                key={index}
+                className={`flex items-center p-3 rounded-xl transition-all ${
+                  isActive
+                    ? 'bg-[#FEF2F2] border border-[#F8C5C5]'
+                    : isComplete
+                    ? 'bg-white'
+                    : 'bg-[#FAF9F7]'
+                }`}
+              >
+                <div className="w-6 flex items-center justify-center mr-3">
+                  {isComplete ? (
+                    <div className="w-5 h-5 rounded-full bg-[#D52B1E] flex items-center justify-center text-white">
+                      <CheckIcon size={12} color="#FFFFFF" />
+                    </div>
+                  ) : isActive ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-[#D52B1E] border-t-transparent animate-spin" />
+                  ) : (
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-[#E8E8EA]" />
+                  )}
+                </div>
+
+                <span
+                  className={`flex-1 text-sm ${
+                    isComplete
+                      ? 'font-bold text-[#1A1A1C]'
+                      : isActive
+                      ? 'font-extrabold text-[#D52B1E]'
+                      : 'font-medium text-[#9A9A9F]'
+                  }`}
+                >
+                  {stage.label}
+                </span>
+
+                {isActive ? (
+                  <span className="text-[#D52B1E] text-xs animate-ping">●</span>
+                ) : isComplete ? (
+                  <span className="text-[#D4A017] text-xs font-extrabold">✓</span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="text-[11px] text-[#9A9A9F] mt-6 tracking-wide font-medium">
+          Processing with Wells Fargo AI
+        </p>
       </div>
     </div>
   );

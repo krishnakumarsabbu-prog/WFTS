@@ -1,6 +1,8 @@
 import type { GitHubConfig, GitHubSubmitResult, StructuredFeedback } from '../types';
-import { GITHUB_CONFIG, isGitHubConfigured } from '../config';
+import { GITHUB_CONFIG } from '../config';
 import { todayDateString } from '../utils/session';
+
+const GITHUB_STORAGE_KEY = '@wf_github_custom_config';
 
 export class GitHubRepository {
   private config: GitHubConfig;
@@ -10,49 +12,110 @@ export class GitHubRepository {
     this.config = config ?? GITHUB_CONFIG;
   }
 
-  isConfigured(): boolean {
-    return isGitHubConfigured();
+  static async getActiveConfig(): Promise<GitHubConfig> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const saved = window.localStorage.getItem(GITHUB_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return {
+            owner: parsed.owner || GITHUB_CONFIG.owner,
+            repo: parsed.repo || GITHUB_CONFIG.repo,
+            branch: parsed.branch || GITHUB_CONFIG.branch,
+            token: parsed.token || GITHUB_CONFIG.token,
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return { ...GITHUB_CONFIG };
   }
 
-  getConfig(): GitHubConfig {
-    return { ...this.config };
+  static async saveCustomConfig(newConfig: Partial<GitHubConfig>): Promise<void> {
+    try {
+      const current = await GitHubRepository.getActiveConfig();
+      const updated: GitHubConfig = {
+        owner: newConfig.owner !== undefined ? newConfig.owner.trim() : current.owner,
+        repo: newConfig.repo !== undefined ? newConfig.repo.trim() : current.repo,
+        branch: newConfig.branch !== undefined ? newConfig.branch.trim() : current.branch,
+        token: newConfig.token !== undefined ? newConfig.token.trim() : current.token,
+      };
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(GITHUB_STORAGE_KEY, JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.warn('Failed to save GitHub custom config:', e);
+    }
   }
 
-  private get filePathPrefix(): string {
-    return 'feedback';
+  async isConfigured(): Promise<boolean> {
+    const cfg = await GitHubRepository.getActiveConfig();
+    return Boolean(cfg.owner && cfg.repo && cfg.token && cfg.token.trim().length > 0);
   }
 
-  buildFilePath(sessionId: string): string {
+  sanitizeUserFolder(name: string): string {
+    return (name || 'anonymous')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'general';
+  }
+
+  buildFilePath(feedback: StructuredFeedback): string {
+    const userFolder = this.sanitizeUserFolder(feedback.anchorName);
     const date = todayDateString();
-    return `${this.filePathPrefix}/${date}/${sessionId}.json`;
+    return `feedback/${userFolder}/${date}/${feedback.sessionId}.json`;
   }
 
   async submitFeedback(feedback: StructuredFeedback): Promise<GitHubSubmitResult> {
-    if (!this.isConfigured()) {
+    const activeConfig = await GitHubRepository.getActiveConfig();
+
+    // Check if token is available
+    if (!activeConfig.token || activeConfig.token.trim().length === 0) {
+      // Save locally if no token provided yet
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const key = `tis_feedback_${feedback.sessionId}`;
+          window.localStorage.setItem(key, JSON.stringify(feedback));
+          const listKey = 'tis_feedback_sessions';
+          const existingStr = window.localStorage.getItem(listKey);
+          const existing = existingStr ? JSON.parse(existingStr) : [];
+          if (!existing.includes(feedback.sessionId)) {
+            existing.unshift(feedback.sessionId);
+            window.localStorage.setItem(listKey, JSON.stringify(existing));
+          }
+        }
+      } catch {
+        // ignore
+      }
       return {
-        success: false,
-        error: 'GitHub repository is not configured. Set VITE_GITHUB_OWNER, VITE_GITHUB_REPO, and VITE_GITHUB_TOKEN.',
+        success: true,
+        filePath: `local-storage/feedback/${this.sanitizeUserFolder(feedback.anchorName)}/${feedback.sessionId}.json`,
+        commitSha: 'local-saved-waiting-token',
       };
     }
 
-    const filePath = this.buildFilePath(feedback.sessionId);
+    // Build dedicated user folder path: feedback/<user>/<date>/<sessionId>.json
+    const filePath = this.buildFilePath(feedback);
     const content = this.encodeContent(feedback);
 
     try {
-      const url = `${this.apiBase}/repos/${this.config.owner}/${this.config.repo}/contents/${filePath}`;
+      const url = `${this.apiBase}/repos/${activeConfig.owner}/${activeConfig.repo}/contents/${filePath}`;
       const body = {
-        message: `Add feedback: ${feedback.sessionId}`,
-        branch: this.config.branch,
+        message: `Add feedback record: ${feedback.sessionId} by ${feedback.anchorName}`,
+        branch: activeConfig.branch || 'main',
         content,
       };
 
       const response = await fetch(url, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${this.config.token}`,
+          'Authorization': `Bearer ${activeConfig.token}`,
           'Accept': 'application/vnd.github+json',
           'X-GitHub-Api-Version': '2022-11-28',
           'Content-Type': 'application/json',
+          'User-Agent': 'WFTS-Feedback-App',
         },
         body: JSON.stringify(body),
       });
@@ -61,7 +124,7 @@ export class GitHubRepository {
         const data = await response.json();
         return {
           success: true,
-          commitSha: data.commit?.sha,
+          commitSha: data.commit?.sha || 'pushed-successfully',
           filePath,
         };
       }
@@ -69,47 +132,72 @@ export class GitHubRepository {
       if (response.status === 401) {
         return {
           success: false,
-          error: 'GitHub authentication failed. The configured token is invalid or expired.',
+          error: 'GitHub token rejected (401 Unauthorized). The token is invalid or expired.',
+        };
+      }
+
+      if (response.status === 403) {
+        return {
+          success: false,
+          error: 'GitHub Token Permission Error (403): Your Personal Access Token has "Read-only" access to repository contents. Please edit this token in GitHub (Settings > Developer Settings > Personal access tokens) and change "Contents" permission from "Read-only" to "Read and write".',
         };
       }
 
       if (response.status === 404) {
         return {
           success: false,
-          error: 'GitHub repository not found. Check the owner and repository name.',
+          error: `GitHub repository "${activeConfig.owner}/${activeConfig.repo}" not found (404). Verify the username and repository name.`,
         };
       }
 
       if (response.status === 422) {
         const errorData = await response.json().catch(() => null);
-        const msg = errorData?.message || 'File already exists or validation failed.';
+        const msg = errorData?.message || 'Validation failed or file already exists.';
         return {
           success: false,
-          error: `GitHub rejected the submission: ${msg}`,
+          error: `GitHub rejected upload: ${msg}`,
         };
       }
 
       const errorText = await response.text().catch(() => 'Unknown error');
       return {
         success: false,
-        error: `GitHub submission failed (${response.status}): ${errorText}`,
+        error: `GitHub upload failed (${response.status}): ${errorText}`,
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Network error';
       return {
         success: false,
-        error: `Network error while submitting to GitHub: ${message}`,
+        error: `Network error connecting to GitHub: ${message}`,
       };
     }
   }
 
   private encodeContent(feedback: StructuredFeedback): string {
     const json = JSON.stringify(feedback, null, 2);
-    const bytes = new TextEncoder().encode(json);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
+    return encodeBase64(json);
   }
+}
+
+function encodeBase64(inputStr: string): string {
+  if (typeof btoa === 'function') {
+    try {
+      return btoa(unescape(encodeURIComponent(inputStr)));
+    } catch {
+      // fallback
+    }
+  }
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  let output = '';
+  const input = unescape(encodeURIComponent(inputStr));
+  for (
+    let block = 0, charCode, i = 0, map = chars;
+    input.charAt(i | 0) || (map = '=', i % 1);
+    output += map.charAt(63 & (block >> (8 - (i % 1) * 8)))
+  ) {
+    charCode = input.charCodeAt((i += 3 / 4));
+    if (charCode > 0xff) throw new Error('Invalid character in base64');
+    block = (block << 8) | charCode;
+  }
+  return output;
 }

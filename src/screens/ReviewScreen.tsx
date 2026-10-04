@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import type { StructuredFeedback, Sentiment, InterestLevel } from '../types';
 import { ArrowLeftIcon, PlusIcon, TrashIcon, CloudIcon } from '../components/icons';
 import { InnovationBackground, GoldDivider } from '../components/InnovationBackground';
+import { WFTheme } from '../theme';
 
 interface ReviewScreenProps {
   feedback: StructuredFeedback;
@@ -13,114 +14,134 @@ interface ReviewScreenProps {
 const SENTIMENT_OPTIONS: Sentiment[] = ['positive', 'neutral', 'negative', 'mixed'];
 const INTEREST_OPTIONS: InterestLevel[] = ['high', 'medium', 'low'];
 
-const SENTIMENT_STYLES: Record<Sentiment, { active: string; dot: string }> = {
-  positive: { active: 'bg-green-500/15 text-green-400 border-green-500/30', dot: 'bg-green-400' },
-  neutral: { active: 'bg-white/10 text-wf-stone-300 border-white/15', dot: 'bg-wf-stone-400' },
-  negative: { active: 'bg-wf-red/15 text-wf-red-bright border-wf-red/30', dot: 'bg-wf-red-bright' },
-  mixed: { active: 'bg-amber-500/15 text-amber-400 border-amber-500/30', dot: 'bg-amber-400' },
-};
-
-const INTEREST_STYLES: Record<InterestLevel, { active: string; dot: string }> = {
-  high: { active: 'bg-green-500/15 text-green-400 border-green-500/30', dot: 'bg-green-400' },
-  medium: { active: 'bg-amber-500/15 text-amber-400 border-amber-500/30', dot: 'bg-amber-400' },
-  low: { active: 'bg-white/10 text-wf-stone-300 border-white/15', dot: 'bg-wf-stone-400' },
-};
-
 export function ReviewScreen({ feedback, onUpdate, onSubmit, onBack }: ReviewScreenProps) {
   const update = (partial: Partial<StructuredFeedback>) => {
     onUpdate({ ...feedback, ...partial });
   };
 
   return (
-    <div className="relative flex flex-col min-h-[100dvh] bg-wf-ink text-white overflow-hidden">
-      <InnovationBackground variant="dark" />
+    <div className="min-h-screen bg-[#FAF9F7] text-[#1A1A1C] relative flex flex-col justify-between">
+      <InnovationBackground variant="light" />
 
-      {/* Header */}
-      <div className="relative z-10 flex items-center gap-3 px-4 py-3 border-b border-white/5">
-        <button
-          onClick={onBack}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-wf-stone-400 hover:bg-white/5 transition-colors"
-          aria-label="Back"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-        </button>
-        <div>
-          <h2 className="text-lg font-extrabold tracking-tight">Insight Captured</h2>
-          <p className="text-[11px] text-wf-stone-500">Here's what we heard from the conversation.</p>
+      {/* Screen Header */}
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E8E8EA] px-5 py-3">
+        <div className="max-w-xl mx-auto flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#FAF9F7] hover:bg-[#F0F0F2] border border-[#E8E8EA] transition-all"
+          >
+            <ArrowLeftIcon size={18} />
+          </button>
+          <div>
+            <h1 className="text-base font-extrabold text-[#1A1A1C] leading-tight">Insight Captured</h1>
+            <p className="text-[11px] text-[#6B6B70]">Review and refine what we heard from the conversation.</p>
+          </div>
         </div>
       </div>
 
-      <div className="relative z-10 flex-1 px-4 py-4 space-y-3 overflow-y-auto no-scrollbar">
-        {/* Session metadata strip */}
-        <div className="flex items-center gap-3 text-[10px] font-mono text-wf-stone-600">
-          <span>{feedback.sessionId}</span>
-          <span className="w-1 h-1 rounded-full bg-wf-stone-700" />
-          <span>{feedback.anchorName}</span>
+      <main className="max-w-xl mx-auto w-full px-5 py-6 flex-1 space-y-4">
+        {/* Metadata Strip */}
+        <div className="flex items-center gap-2 text-xs font-mono text-[#6B6B70] bg-white p-2.5 rounded-xl border border-[#E8E8EA]">
+          <span className="font-bold text-[#D52B1E]">{feedback.sessionId}</span>
+          <span>•</span>
+          <span className="text-[#1A1A1C] font-sans font-semibold">{feedback.anchorName}</span>
         </div>
 
-        {/* Hero insight card */}
-        <div className="glass-dark rounded-2xl p-5 animate-slide-up">
-          <p className="text-[10px] font-semibold text-wf-gold uppercase tracking-[0.15em] mb-2">Key Insight</p>
+        {/* Key Insight Card */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#E8E8EA]">
+          <label className="block text-xs font-bold text-[#1A1A1C] uppercase tracking-wider mb-2">
+            Key Insight / Summary
+          </label>
           <textarea
+            rows={3}
             value={feedback.summary}
             onChange={(e) => update({ summary: e.target.value })}
-            className="w-full bg-transparent text-base font-medium text-white leading-relaxed border-0 outline-none resize-none"
-            rows={3}
+            className="w-full p-3 bg-[#FAF9F7] rounded-xl border border-[#E8E8EA] text-sm text-[#1A1A1C] focus:outline-none focus:border-[#D52B1E] transition-all resize-none"
           />
         </div>
 
-        {/* Sentiment + Interest row */}
-        <div className="grid grid-cols-2 gap-3 animate-slide-up-delayed">
-          <div className="glass-dark rounded-xl p-4">
-            <p className="text-[10px] font-semibold text-wf-stone-500 uppercase tracking-[0.12em] mb-2.5">Overall Sentiment</p>
+        {/* Sentiment & Interest Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Sentiment */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#E8E8EA]">
+            <label className="block text-xs font-bold text-[#1A1A1C] uppercase tracking-wider mb-2">
+              Overall Sentiment
+            </label>
             <div className="flex flex-wrap gap-1.5">
-              {SENTIMENT_OPTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => update({ sentiment: s })}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all capitalize ${
-                    feedback.sentiment === s ? SENTIMENT_STYLES[s].active : 'bg-transparent text-wf-stone-600 border-white/8'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+              {SENTIMENT_OPTIONS.map((s) => {
+                const isSelected = feedback.sentiment === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => update({ sentiment: s })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
+                      isSelected
+                        ? s === 'negative'
+                          ? 'bg-[#FEF2F2] text-[#D52B1E] border border-[#F8C5C5]'
+                          : 'bg-[#D52B1E] text-white shadow-sm'
+                        : 'bg-[#FAF9F7] text-[#6B6B70] border border-[#E8E8EA] hover:bg-[#F0F0F2]'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="glass-dark rounded-xl p-4">
-            <p className="text-[10px] font-semibold text-wf-stone-500 uppercase tracking-[0.12em] mb-2.5">Interest Level</p>
-            <div className="flex gap-1.5">
-              {INTEREST_OPTIONS.map((l) => (
-                <button
-                  key={l}
-                  onClick={() => update({ interestLevel: l })}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all capitalize ${
-                    feedback.interestLevel === l ? INTEREST_STYLES[l].active : 'bg-transparent text-wf-stone-600 border-white/8'
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
+
+          {/* Interest Level */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#E8E8EA]">
+            <label className="block text-xs font-bold text-[#1A1A1C] uppercase tracking-wider mb-2">
+              Interest Level
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {INTEREST_OPTIONS.map((l) => {
+                const isSelected = feedback.interestLevel === l;
+                return (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => update({ interestLevel: l })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
+                      isSelected
+                        ? 'bg-[#D52B1E] text-white shadow-sm'
+                        : 'bg-[#FAF9F7] text-[#6B6B70] border border-[#E8E8EA] hover:bg-[#F0F0F2]'
+                    }`}
+                  >
+                    {l}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* Follow-up */}
-        <div className="glass-dark rounded-xl p-4 animate-fade-in">
-          <p className="text-[10px] font-semibold text-wf-stone-500 uppercase tracking-[0.12em] mb-2.5">Follow-up Required</p>
+        {/* Follow-up Required */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#E8E8EA] flex items-center justify-between">
+          <label className="text-xs font-bold text-[#1A1A1C] uppercase tracking-wider">
+            Follow-up Required
+          </label>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => update({ followUpRequired: true })}
-              className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                feedback.followUpRequired ? 'btn-red-glow text-white border-wf-red' : 'bg-transparent text-wf-stone-500 border-white/8'
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                feedback.followUpRequired
+                  ? 'bg-[#D52B1E] text-white shadow-sm'
+                  : 'bg-[#FAF9F7] text-[#6B6B70] border border-[#E8E8EA]'
               }`}
             >
               Yes
             </button>
             <button
+              type="button"
               onClick={() => update({ followUpRequired: false })}
-              className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                !feedback.followUpRequired ? 'bg-white/10 text-white border-white/20' : 'bg-transparent text-wf-stone-500 border-white/8'
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                !feedback.followUpRequired
+                  ? 'bg-[#1A1A1C] text-white shadow-sm'
+                  : 'bg-[#FAF9F7] text-[#6B6B70] border border-[#E8E8EA]'
               }`}
             >
               No
@@ -130,54 +151,80 @@ export function ReviewScreen({ feedback, onUpdate, onSubmit, onBack }: ReviewScr
 
         <GoldDivider className="my-2" />
 
-        {/* Lists */}
-        <EditableList title="What They Liked" items={feedback.liked} onChange={(liked) => update({ liked })} placeholder="Add something they liked..." accent="green" />
-        <EditableList title="Concerns" items={feedback.concerns} onChange={(concerns) => update({ concerns })} placeholder="Add a concern..." accent="red" />
-        <EditableList title="Pain Points" items={feedback.painPoints} onChange={(painPoints) => update({ painPoints })} placeholder="Add a pain point..." accent="amber" />
-        <EditableList title="Suggestions" items={feedback.suggestions} onChange={(suggestions) => update({ suggestions })} placeholder="Add a suggestion..." accent="gold" />
+        {/* Editable Lists */}
+        <EditableList
+          title="What They Liked"
+          items={feedback.liked}
+          onChange={(liked) => update({ liked })}
+          placeholder="Add something they liked..."
+          accentColor={WFTheme.colors.success}
+        />
+        <EditableList
+          title="Concerns"
+          items={feedback.concerns}
+          onChange={(concerns) => update({ concerns })}
+          placeholder="Add a concern..."
+          accentColor={WFTheme.colors.red}
+        />
+        <EditableList
+          title="Pain Points"
+          items={feedback.painPoints}
+          onChange={(painPoints) => update({ painPoints })}
+          placeholder="Add a pain point..."
+          accentColor={WFTheme.colors.warning}
+        />
+        <EditableList
+          title="Suggestions"
+          items={feedback.suggestions}
+          onChange={(suggestions) => update({ suggestions })}
+          placeholder="Add a suggestion..."
+          accentColor={WFTheme.colors.goldDeep}
+        />
 
-        {/* Transcript preview */}
-        <div className="glass-dark rounded-xl p-4">
-          <p className="text-[10px] font-semibold text-wf-stone-500 uppercase tracking-[0.12em] mb-2">Source Evidence</p>
-          <div className="max-h-32 overflow-y-auto no-scrollbar">
-            <p className="text-xs text-wf-stone-400 leading-relaxed whitespace-pre-wrap">{feedback.transcript}</p>
-          </div>
+        {/* Source Evidence */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#E8E8EA]">
+          <label className="block text-xs font-bold text-[#1A1A1C] uppercase tracking-wider mb-2">
+            Source Evidence / Raw Transcript
+          </label>
+          <p className="text-xs text-[#4A4A50] leading-relaxed whitespace-pre-wrap bg-[#FAF9F7] p-3 rounded-xl border border-[#E8E8EA]">
+            {feedback.transcript}
+          </p>
         </div>
-      </div>
+      </main>
 
-      {/* Submit bar */}
-      <div className="relative z-10 bg-wf-ink/90 backdrop-blur-xl border-t border-white/5 px-4 py-3 safe-bottom">
-        <button
-          onClick={onSubmit}
-          className="w-full flex items-center justify-center gap-2 btn-red-glow text-white font-bold text-base py-3.5 rounded-xl transition-all active:scale-[0.98]"
-        >
-          <CloudIcon className="w-5 h-5" />
-          Submit to Summit Repository
-        </button>
+      {/* Bottom Submit Bar */}
+      <div className="sticky bottom-0 bg-white/95 backdrop-blur-md border-t border-[#E8E8EA] py-3 px-5">
+        <div className="max-w-xl mx-auto">
+          <button
+            type="button"
+            onClick={onSubmit}
+            className="w-full py-3.5 px-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99]"
+            style={{
+              background: `linear-gradient(135deg, ${WFTheme.colors.redBright} 0%, ${WFTheme.colors.redDeep} 100%)`,
+              boxShadow: WFTheme.shadows.button,
+            }}
+          >
+            <CloudIcon size={20} color="#FFFFFF" />
+            <span>Submit to Summit Repository</span>
+          </button>
+        </div>
       </div>
     </div>
   );
 }
-
-const ACCENT_COLORS: Record<string, string> = {
-  green: 'bg-green-400',
-  red: 'bg-wf-red-bright',
-  amber: 'bg-amber-400',
-  gold: 'bg-wf-gold',
-};
 
 function EditableList({
   title,
   items,
   onChange,
   placeholder,
-  accent,
+  accentColor,
 }: {
   title: string;
   items: string[];
   onChange: (items: string[]) => void;
   placeholder: string;
-  accent: string;
+  accentColor: string;
 }) {
   const [newItem, setNewItem] = useState('');
 
@@ -189,59 +236,66 @@ function EditableList({
     }
   };
 
-  const removeItem = (index: number) => onChange(items.filter((_, i) => i !== index));
-  const updateItem = (index: number, value: string) => {
-    const updated = [...items];
-    updated[index] = value;
-    onChange(updated);
+  const removeItem = (index: number) => {
+    onChange(items.filter((_, i) => i !== index));
+  };
+
+  const updateItem = (index: number, val: string) => {
+    const next = [...items];
+    next[index] = val;
+    onChange(next);
   };
 
   return (
-    <div className="glass-dark rounded-xl p-4 animate-fade-in">
-      <div className="flex items-center gap-2 mb-3">
-        <span className={`w-1.5 h-1.5 rounded-full ${ACCENT_COLORS[accent]}`} />
-        <h3 className="text-[10px] font-semibold text-wf-stone-400 uppercase tracking-[0.12em]">{title}</h3>
-        {items.length > 0 && <span className="text-[10px] text-wf-stone-600 font-mono ml-auto">{items.length}</span>}
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#E8E8EA]">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: accentColor }} />
+          <span className="text-xs font-bold text-[#1A1A1C] uppercase tracking-wider">{title}</span>
+        </div>
+        {items.length > 0 && (
+          <span className="text-xs font-mono font-bold text-[#6B6B70] bg-[#FAF9F7] px-2 py-0.5 rounded-md border border-[#E8E8EA]">
+            {items.length}
+          </span>
+        )}
       </div>
-      <div className="space-y-2">
-        {items.map((item, index) => (
-          <div key={index} className="flex items-start gap-2">
+
+      <div className="space-y-2 mb-3">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-2">
             <input
               type="text"
               value={item}
-              onChange={(e) => updateItem(index, e.target.value)}
-              className="flex-1 px-3 py-2 text-sm text-white bg-white/5 border border-white/8 rounded-lg outline-none focus:border-wf-red/40 transition-colors"
+              onChange={(e) => updateItem(idx, e.target.value)}
+              className="flex-1 px-3 py-1.5 bg-[#FAF9F7] rounded-lg border border-[#E8E8EA] text-xs text-[#1A1A1C] focus:outline-none focus:border-[#D52B1E]"
             />
             <button
-              onClick={() => removeItem(index)}
-              className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-wf-stone-600 hover:text-wf-red-bright hover:bg-wf-red/10 transition-colors"
-              aria-label="Remove"
+              type="button"
+              onClick={() => removeItem(idx)}
+              className="p-1.5 text-[#9A9A9F] hover:text-[#D52B1E] transition-colors"
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon size={14} />
             </button>
           </div>
         ))}
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={newItem}
-            onChange={(e) => setNewItem(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addItem()}
-            placeholder={placeholder}
-            className="flex-1 px-3 py-2 text-sm text-white bg-white/5 border border-white/8 rounded-lg outline-none focus:border-wf-red/40 transition-colors placeholder:text-wf-stone-600"
-          />
-          <button
-            onClick={addItem}
-            disabled={!newItem.trim()}
-            className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 text-wf-stone-400 hover:bg-white/10 transition-colors disabled:opacity-30"
-            aria-label="Add"
-          >
-            <PlusIcon className="w-4 h-4" />
-          </button>
-        </div>
-        {items.length === 0 && !newItem && (
-          <p className="text-xs text-wf-stone-600 italic">Nothing captured.</p>
-        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={newItem}
+          onChange={(e) => setNewItem(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addItem()}
+          placeholder={placeholder}
+          className="flex-1 px-3 py-2 bg-[#FAF9F7] rounded-xl border border-[#E8E8EA] text-xs text-[#1A1A1C] placeholder-[#9A9A9F] focus:outline-none focus:border-[#D52B1E]"
+        />
+        <button
+          type="button"
+          onClick={addItem}
+          className="p-2 rounded-xl bg-[#FAF9F7] hover:bg-[#F0F0F2] border border-[#E8E8EA] text-[#1A1A1C] transition-all"
+        >
+          <PlusIcon size={16} />
+        </button>
       </div>
     </div>
   );

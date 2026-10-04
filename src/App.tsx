@@ -1,3 +1,4 @@
+import React from 'react';
 import { useSession } from './hooks/useSession';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { ConversationScreen } from './screens/ConversationScreen';
@@ -12,43 +13,54 @@ export function App() {
 
   switch (session.phase) {
     case 'welcome':
-      return <WelcomeScreen onStart={session.startSession} />;
+      return (
+        <WelcomeScreen
+          onStart={session.startSession}
+          onSubmitFeedback={session.submitDirectFeedback}
+        />
+      );
 
     case 'conversation':
       return (
-        <div className="flex flex-col min-h-[100dvh]">
-          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} variant="dark" />
-          <ConversationScreen
-            transcript={session.transcript}
-            recordingStatus={session.recordingStatus}
-            elapsedSeconds={session.elapsedSeconds}
-            onStartRecording={session.startRecording}
-            onStopRecording={session.stopRecording}
-            onUpdateTranscript={session.updateTranscript}
-            onSubmit={session.submitFeedback}
-            onCancel={session.cancelSession}
-          />
+        <div className="min-h-screen flex flex-col bg-[#FAF9F7]">
+          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} variant="light" />
+          <div className="flex-1 flex flex-col">
+            <ConversationScreen
+              transcript={session.transcript}
+              recordingStatus={session.recordingStatus}
+              elapsedSeconds={session.elapsedSeconds}
+              onStartRecording={session.startRecording}
+              onStopRecording={session.stopRecording}
+              onUpdateTranscript={session.updateTranscript}
+              onSubmit={session.submitFeedback}
+              onCancel={session.cancelSession}
+            />
+          </div>
         </div>
       );
 
     case 'processing':
       return (
-        <div className="flex flex-col min-h-[100dvh]">
-          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} variant="dark" />
-          <ProcessingScreen stages={session.processingStages} />
+        <div className="min-h-screen flex flex-col bg-[#FAF9F7]">
+          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} variant="light" />
+          <div className="flex-1 flex flex-col">
+            <ProcessingScreen stages={session.processingStages} />
+          </div>
         </div>
       );
 
     case 'review':
       return session.feedback ? (
-        <div className="flex flex-col min-h-[100dvh]">
-          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} variant="dark" />
-          <ReviewScreen
-            feedback={session.feedback}
-            onUpdate={session.updateFeedback}
-            onSubmit={session.submitToGitHub}
-            onBack={session.backToConversation}
-          />
+        <div className="min-h-screen flex flex-col bg-[#FAF9F7]">
+          <AppHeader anchorName={session.anchorName} sessionId={session.sessionId} variant="light" />
+          <div className="flex-1 flex flex-col">
+            <ReviewScreen
+              feedback={session.feedback}
+              onUpdate={session.updateFeedback}
+              onSubmit={session.submitToGitHub}
+              onBack={session.backToConversation}
+            />
+          </div>
         </div>
       ) : null;
 
@@ -73,6 +85,13 @@ export function App() {
       );
 
     default:
-      return <WelcomeScreen onStart={session.startSession} />;
+      return (
+        <WelcomeScreen
+          onStart={session.startSession}
+          onSubmitFeedback={session.submitDirectFeedback}
+        />
+      );
   }
 }
+
+export default App;

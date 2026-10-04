@@ -1,5 +1,7 @@
+import React from 'react';
 import { AlertIcon, RefreshIcon, ArrowLeftIcon } from '../components/icons';
 import { InnovationBackground, GoldDivider } from '../components/InnovationBackground';
+import { WFTheme } from '../theme';
 
 interface ErrorScreenProps {
   errorMessage: string;
@@ -10,64 +12,70 @@ interface ErrorScreenProps {
 
 export function ErrorScreen({ errorMessage, onRetry, onBack, onCancel }: ErrorScreenProps) {
   return (
-    <div className="relative flex flex-col min-h-[100dvh] bg-wf-ink text-white overflow-hidden">
-      <InnovationBackground variant="dark" />
+    <div className="min-h-screen bg-[#FAF9F7] text-[#1A1A1C] relative flex flex-col justify-center items-center px-6 py-12">
+      <InnovationBackground variant="light" />
 
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-8">
-        <div className="w-full max-w-sm animate-fade-in">
-          {/* Error icon */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="relative w-20 h-20 mb-5">
-              <span className="absolute inset-0 rounded-full bg-wf-red/10 animate-expand-pulse" />
-              <div className="relative w-20 h-20 rounded-full bg-wf-red/15 border border-wf-red/30 flex items-center justify-center">
-                <AlertIcon className="w-10 h-10 text-wf-red-bright" />
-              </div>
-            </div>
-            <h1 className="text-xl font-extrabold tracking-tight text-center">Feedback Could Not Be Submitted</h1>
-            <p className="text-sm text-wf-stone-400 mt-2 text-center max-w-xs">
-              Your conversation is still saved. You can retry the submission.
-            </p>
+      <main className="max-w-md w-full flex flex-col items-center">
+        {/* Error Icon Centerpiece */}
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-16 h-16 rounded-full bg-[#FEF2F2] border border-[#F8C5C5] flex items-center justify-center mb-4">
+            <AlertIcon size={32} color={WFTheme.colors.red} />
           </div>
+          <h1 className="text-2xl font-extrabold text-[#1A1A1C] text-center">Submission Failed</h1>
+          <p className="text-xs text-[#4A4A50] text-center mt-1 max-w-xs">
+            Your conversation notes are still saved. You can retry or edit your feedback.
+          </p>
+        </div>
 
-          {/* Error details */}
-          <div className="glass-dark rounded-2xl p-4 mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-wf-red-bright" />
-              <p className="text-[10px] font-semibold text-wf-red-bright uppercase tracking-[0.15em]">Error Details</p>
-            </div>
-            <GoldDivider className="mb-3" />
-            <p className="text-sm text-wf-stone-300 leading-relaxed break-words">
-              {errorMessage || 'An unexpected error occurred.'}
-            </p>
+        {/* Error Details Card */}
+        <div className="w-full bg-white rounded-2xl p-5 shadow-sm border border-[#E8E8EA] mb-6">
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="w-2 h-2 rounded-full bg-[#D52B1E]" />
+            <span className="text-[10px] font-bold text-[#D52B1E] uppercase tracking-wider">
+              Error Details
+            </span>
           </div>
+          <GoldDivider className="my-2" />
+          <p className="text-xs text-[#4A4A50] leading-relaxed break-words">
+            {errorMessage || 'An unexpected error occurred during submission.'}
+          </p>
+        </div>
 
-          {/* Actions */}
-          <div className="space-y-3">
+        {/* Action buttons */}
+        <div className="w-full space-y-3">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="w-full py-3.5 px-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99]"
+            style={{
+              background: `linear-gradient(135deg, ${WFTheme.colors.redBright} 0%, ${WFTheme.colors.redDeep} 100%)`,
+              boxShadow: WFTheme.shadows.button,
+            }}
+          >
+            <RefreshIcon size={18} color="#FFFFFF" />
+            <span>Retry Submission</span>
+          </button>
+
+          <div className="flex gap-2">
             <button
-              onClick={onRetry}
-              className="w-full flex items-center justify-center gap-2 btn-red-glow text-white font-bold text-base py-3.5 rounded-xl transition-all active:scale-[0.98]"
+              type="button"
+              onClick={onBack}
+              className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-[#1A1A1C] bg-white hover:bg-[#FAF9F7] border border-[#E8E8EA] flex items-center justify-center gap-2 transition-all"
             >
-              <RefreshIcon className="w-5 h-5" />
-              Retry Submission
+              <ArrowLeftIcon size={16} />
+              <span>Edit Feedback</span>
             </button>
-            <div className="flex gap-3">
-              <button
-                onClick={onBack}
-                className="flex-1 flex items-center justify-center gap-1.5 text-wf-stone-300 bg-white/5 font-medium text-sm py-3 rounded-xl transition-all active:scale-[0.98] hover:bg-white/10"
-              >
-                <ArrowLeftIcon className="w-4 h-4" />
-                Edit Feedback
-              </button>
-              <button
-                onClick={onCancel}
-                className="flex-1 text-wf-stone-500 bg-transparent font-medium text-sm py-3 rounded-xl transition-all hover:bg-white/5 hover:text-wf-stone-300"
-              >
-                Cancel Session
-              </button>
-            </div>
+
+            <button
+              type="button"
+              onClick={onCancel}
+              className="py-3 px-5 rounded-xl text-xs font-semibold text-[#6B6B70] hover:text-[#1A1A1C] transition-all"
+            >
+              Cancel
+            </button>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
